@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#06142f">
+<title>Curacao Car Audio Course</title>
+<link rel="stylesheet" href="styles.css?v=3">
+<style>.lessonBtn{width:100%;margin:8px 0}.now{font-size:32px;font-weight:950;line-height:1.1}.smallNote{color:#c9d7f4;font-size:15px}</style>
+</head>
+<body>
+<main class="app">
+<section class="hero">
+<h1>Curacao Car Audio Course</h1>
+<p>Pimsleur-style driving lessons. Connect to your car Bluetooth or CarPlay, tap Start, and keep the page open.</p>
+<button class="unlock" onclick="unlock()">Start + Unlock Car Audio</button>
+<div class="status" id="status">Audio status: not started.</div>
+</section>
+<section class="card">
+<h2>Driving Lessons</h2>
+<div id="lessons"></div>
+</section>
+<section class="card">
+<h2 id="title">Choose a lesson</h2>
+<div class="playerBox">
+<div class="pill" id="counter">Phrase 0 of 0</div>
+<div class="now" id="phrase">Ready</div>
+<div class="eng" id="meaning">Choose a lesson and press Start.</div>
+<div class="smallNote" id="cue">The coach will say the phrase, pause, repeat it, translate it, then move on.</div>
+<div class="row">
+<button class="btn secondary" onclick="prev()">Previous</button>
+<button class="btn" onclick="repeat()">Repeat</button>
+<button class="btn secondary" onclick="next()">Next</button>
+<button class="btn green" onclick="toggleAuto()" id="autoBtn">Start Auto</button>
+<button class="btn red" onclick="stopAll()">Stop</button>
+</div>
+</div>
+</section>
+<section class="card">
+<h3>Car setup</h3>
+<p class="big">Connect iPhone to car Bluetooth or CarPlay. Keep Safari open and the screen awake. For screen-off playback, the next step is real MP3 exports.</p>
+</section>
+</main>
+<script>
+const lessons=[
+['Airport to Resort',[['Bon dia.','Good morning.'],['Mi tin un reservashon.','I have a reservation.'],['Mi ta buska un taxi.','I am looking for a taxi.'],['Kuantu e ta kusta?','How much does it cost?'],['Llevami na hotel.','Take me to the hotel.']]],
+['Concierge and Hotel',[['Mi nomber ta Rayna.','My name is Rayna.'],['Bo por yuda mi?','Can you help me?'],['Mi a papia ku e concierge team.','I spoke with the concierge team.'],['Mi tin un problema.','I have a problem.']]],
+['Cabernet and Caymus',[['Mi ta buska un bon Cabernet Sauvignon.','I am looking for a good Cabernet Sauvignon.'],['Bo tin Cabernet Sauvignon di Napa Valley?','Do you have Cabernet Sauvignon from Napa Valley?'],['Bo tin Caymus?','Do you have Caymus?'],['Kua Cabernet bo ta rekomenda?','Which Cabernet do you recommend?'],['Mi ke un glas Cabernet Sauvignon, por fabor.','I would like a glass of Cabernet Sauvignon, please.']]],
+['Cocktails',[['Mi ke un Hugo Spritz ku hopi mint, por fabor.','I would like a Hugo Spritz with lots of mint, please.'],['Bo por pone mas mint aden?','Can you add extra mint?'],['Mi ke un French 79, por fabor.','I would like a French 79, please.'],['Kua cocktail bo ta rekomenda?','Which cocktail do you recommend?']]],
+['Desserts',[['Kiko postre bo tin awe?','What desserts do you have today?'],['Kiko postre bo ta rekomenda?','What dessert do you recommend?'],['Kua ta bo postre mas popular?','What is your most popular dessert?'],['Bo tin gelato?','Do you have gelato?'],['Esaki ta bai bon ku Cabernet Sauvignon?','Does this pair well with Cabernet Sauvignon?']]],
+['Riley Birthday Week',[['Nos ta selebra cumpleano di mi yiu Riley ku ta bira 11.','We are celebrating my daughter Riley turning 11.'],['Nos ke dekorashon den kamber.','We want decorations in the room.'],['Nos ta tuma potret di famia na Director Beach.','We are taking family photos at Director Beach.'],['Felis cumpleano, Ry Ry.','Happy birthday, Ry Ry.']]],
+['Beach and Mermaid',[['Nos tin les di mermaid na dies or di mainta.','We have mermaid lessons at 10 in the morning.'],['Nos tin un les di snorkel na Playa Piskado.','We have a snorkeling lesson at Playa Piskado.'],['Silla di playa.','Beach chair.'],['Sombre.','Umbrella.']]],
+['Emergency Survival',[['Mi mester un dokter.','I need a doctor.'],['Mi a perde mi pasaporte.','I lost my passport.'],['Mi no por haya mi yiu.','I cannot find my child.'],['Yama ambulans, por fabor.','Call an ambulance, please.']]]
+];
+let li=0,pi=0,auto=false,busy=false;
+const $=id=>document.getElementById(id);
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+function voice(){let vs=speechSynthesis.getVoices();return vs.find(v=>v.lang==='es-ES')||vs.find(v=>v.lang&&v.lang.startsWith('es'))||vs.find(v=>v.lang==='en-US')||vs[0]}
+function say(text,rate=.55,lang='es-ES'){return new Promise(res=>{speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=rate;let v=lang==='en-US'?(speechSynthesis.getVoices().find(x=>x.lang==='en-US')||voice()):voice();if(v)u.voice=v;u.onend=res;u.onerror=res;speechSynthesis.speak(u);$('status').textContent='Playing car audio...';})}
+function renderLessons(){ $('lessons').innerHTML=lessons.map((l,i)=>`<button class="btn lessonBtn ${i===li?'green':'secondary'}" onclick="choose(${i})">${i+1}. ${l[0]}</button>`).join('')}
+function choose(i){li=i;pi=0;auto=false;render();renderLessons()}
+function render(){let l=lessons[li],p=l[1][pi];$('title').textContent=l[0];$('counter').textContent=`Phrase ${pi+1} of ${l[1].length}`;$('phrase').textContent=p[0];$('meaning').textContent=p[1];$('autoBtn').textContent=auto?'Stop Auto':'Start Auto'}
+async function playCurrent(){if(busy)return;busy=true;let p=lessons[li][1][pi];render();await say(p[0],.52,'es-ES');await wait(3000);await say('Repeat now.',.58,'en-US');await wait(4500);await say(p[0],.52,'es-ES');await wait(2200);await say(p[1],.62,'en-US');await wait(1800);busy=false;if(auto){if(pi<lessons[li][1].length-1){pi++;setTimeout(playCurrent,700)}else{auto=false;render();$('status').textContent='Driving lesson complete.'}}}
+function repeat(){playCurrent()}function next(){pi=Math.min(lessons[li][1].length-1,pi+1);render()}function prev(){pi=Math.max(0,pi-1);render()}function toggleAuto(){auto=!auto;render();if(auto)playCurrent()}function stopAll(){auto=false;busy=false;speechSynthesis.cancel();render();$('status').textContent='Stopped.'}
+function unlock(){say('Car audio is unlocked. Choose a lesson and press start auto.',.55,'en-US')}
+renderLessons();render();if(window.speechSynthesis){speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}
+</script>
+</body>
+</html>
