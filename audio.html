@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#06142f">
+<title>Curacao Audio Library</title>
+<link rel="stylesheet" href="styles.css?v=3">
+<style>.track{margin:14px 0}.track audio{width:100%;margin-top:10px}.topBtns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}.download{display:inline-block;margin-top:8px;color:#ffe08a;font-weight:900}.nowPlaying{font-size:22px;font-weight:950;color:#fff}.small{color:#c9d7f4}</style>
+</head>
+<body>
+<main class="app">
+<section class="hero">
+<h1>Curacao MP3 Audio Course</h1>
+<p>Downloadable car-ready lessons. These are real MP3 files generated into the repository.</p>
+<div class="topBtns">
+<button class="unlock" onclick="playAll()">Play All Lessons</button>
+<button class="btn secondary" onclick="stopAll()">Stop</button>
+<a class="btn secondary" style="text-decoration:none" href="index.html?v=500">Main App</a>
+<a class="btn secondary" style="text-decoration:none" href="car.html?v=2">Live Car Coach</a>
+</div>
+<div class="status" id="status">Ready.</div>
+</section>
+<section class="card">
+<h2>Now Playing</h2>
+<div class="nowPlaying" id="now">Nothing yet</div>
+<p class="small">For best car use: open this page, tap Play All, connect to Bluetooth/CarPlay, and keep the page open.</p>
+</section>
+<section id="tracks"></section>
+</main>
+<script>
+const tracks=[
+['Airport to Resort','audio-course/01-airport-to-resort.mp3'],
+['Concierge and Hotel','audio-course/02-concierge-hotel.mp3'],
+['Cabernet and Caymus','audio-course/03-cabernet-caymus.mp3'],
+['Cocktails','audio-course/04-cocktails.mp3'],
+['Desserts','audio-course/05-desserts.mp3'],
+['Riley Birthday Week','audio-course/06-riley-birthday-week.mp3'],
+['Beach and Mermaid','audio-course/07-beach-mermaid.mp3'],
+['Emergency Survival','audio-course/08-emergency-survival.mp3']
+];
+let current=-1,audio=null,playingAll=false;
+const $=id=>document.getElementById(id);
+function render(){ $('tracks').innerHTML=tracks.map((t,i)=>`<section class="card track"><h2>${i+1}. ${t[0]}</h2><audio controls preload="none" src="${t[1]}"></audio><div class="row"><button class="btn" onclick="playOne(${i})">Play</button><a class="btn secondary" style="text-decoration:none" href="${t[1]}" download>Download MP3</a></div></section>`).join('') }
+function playOne(i){stopAll(false);current=i;audio=new Audio(tracks[i][1]);$('now').textContent=tracks[i][0];$('status').textContent='Playing '+tracks[i][0];audio.onended=()=>{if(playingAll&&current<tracks.length-1){playOne(current+1)}else{playingAll=false;$('status').textContent='Playback complete.'}};audio.play().catch(e=>{$('status').textContent='Tap again if iPhone blocked autoplay.'})}
+function playAll(){playingAll=true;playOne(0)}
+function stopAll(update=true){playingAll=false;if(audio){audio.pause();audio.currentTime=0}if(update){$('status').textContent='Stopped.';$('now').textContent='Nothing yet'}}
+render();
+</script>
+</body>
+</html>
