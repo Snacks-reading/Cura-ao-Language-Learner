@@ -1,0 +1,75 @@
+name: Build Car Audio Course MP3s
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-audio-course.yml'
+      - 'audio-course-data.json'
+
+permissions:
+  contents: write
+
+jobs:
+  build-audio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install audio tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y espeak-ng ffmpeg
+      - name: Generate MP3 lessons
+        run: |
+          mkdir -p audio-course build_audio
+          cat > build_audio/build.py <<'PY'
+          import json, os, subprocess, pathlib, textwrap
+          lessons = [
+            {"file":"01-airport-to-resort.mp3","title":"Airport to Resort","items":[["Bon dia.","Good morning."],["Mi tin un reservashon.","I have a reservation."],["Mi ta buska un taxi.","I am looking for a taxi."],["Kuantu e ta kusta?","How much does it cost?"],["Llevami na hotel.","Take me to the hotel."]]},
+            {"file":"02-concierge-hotel.mp3","title":"Concierge and Hotel","items":[["Mi nomber ta Rayna.","My name is Rayna."],["Bo por yuda mi?","Can you help me?"],["Mi a papia ku e concierge team.","I spoke with the concierge team."],["Mi tin un problema.","I have a problem."]]},
+            {"file":"03-cabernet-caymus.mp3","title":"Cabernet and Caymus","items":[["Mi ta buska un bon Cabernet Sauvignon.","I am looking for a good Cabernet Sauvignon."],["Bo tin Cabernet Sauvignon di Napa Valley?","Do you have Cabernet Sauvignon from Napa Valley?"],["Bo tin Caymus?","Do you have Caymus?"],["Kua Cabernet bo ta rekomenda?","Which Cabernet do you recommend?"],["Mi ke un glas Cabernet Sauvignon, por fabor.","I would like a glass of Cabernet Sauvignon, please."]]},
+            {"file":"04-cocktails.mp3","title":"Cocktails","items":[["Mi ke un Hugo Spritz ku hopi mint, por fabor.","I would like a Hugo Spritz with lots of mint, please."],["Bo por pone mas mint aden?","Can you add extra mint?"],["Mi ke un French seventy-nine, por fabor.","I would like a French seventy-nine, please."],["Kua cocktail bo ta rekomenda?","Which cocktail do you recommend?"]]},
+            {"file":"05-desserts.mp3","title":"Desserts","items":[["Kiko postre bo tin awe?","What desserts do you have today?"],["Kiko postre bo ta rekomenda?","What dessert do you recommend?"],["Kua ta bo postre mas popular?","What is your most popular dessert?"],["Bo tin gelato?","Do you have gelato?"],["Esaki ta bai bon ku Cabernet Sauvignon?","Does this pair well with Cabernet Sauvignon?"]]},
+            {"file":"06-riley-birthday-week.mp3","title":"Riley Birthday Week","items":[["Nos ta selebra cumpleano di mi yiu Riley ku ta bira eleven.","We are celebrating my daughter Riley turning eleven."],["Nos ke dekorashon den kamber.","We want decorations in the room."],["Nos ta tuma potret di famia na Director Beach.","We are taking family photos at Director Beach."],["Felis cumpleano, Ry Ry.","Happy birthday, Ry Ry."]]},
+            {"file":"07-beach-mermaid.mp3","title":"Beach and Mermaid","items":[["Nos tin les di mermaid na dies or di mainta.","We have mermaid lessons at ten in the morning."],["Nos tin un les di snorkel na Playa Piskado.","We have a snorkeling lesson at Playa Piskado."],["Silla di playa.","Beach chair."],["Sombre.","Umbrella."]]},
+            {"file":"08-emergency-survival.mp3","title":"Emergency Survival","items":[["Mi mester un dokter.","I need a doctor."],["Mi a perde mi pasaporte.","I lost my passport."],["Mi no por haya mi yiu.","I cannot find my child."],["Yama ambulans, por fabor.","Call an ambulance, please."]]},
+          ]
+          def run(cmd): subprocess.check_call(cmd)
+          def tts(text, wav, voice, speed='145'):
+            run(['espeak-ng','-v',voice,'-s',speed,'-w',wav,text])
+          def silence(wav, seconds):
+            run(['ffmpeg','-y','-f','lavfi','-i',f'anullsrc=r=22050:cl=mono','-t',str(seconds),'-q:a','9','-acodec','pcm_s16le',wav])
+          silence('build_audio/pause3.wav',3); silence('build_audio/pause45.wav',4.5); silence('build_audio/pause18.wav',1.8)
+          manifest=[]
+          for li,lesson in enumerate(lessons,1):
+            work=pathlib.Path('build_audio')/f'l{li:02d}'; work.mkdir(exist_ok=True)
+            parts=[]; n=0
+            def add_t(text, voice='en-us', speed='145'):
+              nonlocal n
+              n+=1; wav=str(work/f'{n:03d}.wav'); tts(text,wav,voice,speed); parts.append(wav)
+            def add_s(name): parts.append(f'build_audio/{name}.wav')
+            add_t('Curacao driving lesson. '+lesson['title'], 'en-us', '140')
+            add_s('pause18')
+            for pap,eng in lesson['items']:
+              add_t(pap,'es','125'); add_s('pause3')
+              add_t('Repeat now.','en-us','135'); add_s('pause45')
+              add_t(pap,'es','125'); add_s('pause18')
+              add_t(eng,'en-us','138'); add_s('pause18')
+            add_t('Lesson complete. Play it again tomorrow.','en-us','138')
+            listfile=work/'concat.txt'
+            listfile.write_text('\n'.join(["file '../"+str(pathlib.Path(p)).as_posix().replace('build_audio/','')+"'" if p.startswith('build_audio/') and '/l' not in p else "file '"+pathlib.Path(p).name+"'" for p in parts]))
+            # build absolute concat list to avoid path confusion
+            listfile.write_text('\n'.join([f"file '{pathlib.Path(p).resolve()}'" for p in parts]))
+            out=f"audio-course/{lesson['file']}"
+            run(['ffmpeg','-y','-f','concat','-safe','0','-i',str(listfile),'-codec:a','libmp3lame','-q:a','4',out])
+            manifest.append({'title':lesson['title'],'file':out})
+          pathlib.Path('audio-course/manifest.json').write_text(json.dumps(manifest,indent=2))
+          PY
+          python build_audio/build.py
+      - name: Commit generated MP3s
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audio-course/*.mp3 audio-course/manifest.json
+          git commit -m "Generate car audio course MP3s" || echo "No audio changes to commit"
+          git push
