@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#06142f">
+<title>Curaçao Immersion Drive Mode</title>
+<link rel="stylesheet" href="styles.css?v=3">
+<style>
+.hero h1{font-size:32px}.bigplay{font-size:22px;padding:18px 22px}.now{font-size:30px;font-weight:950;line-height:1.15}.eng{font-size:19px}.coach{font-size:17px;color:#dbe7ff}.tiny{font-size:14px;color:#b9c8e8}.meter{height:12px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}.bar{height:100%;width:0%;background:linear-gradient(90deg,#ffe08a,#9fffc1);transition:.25s}.phraseList{max-height:360px;overflow:auto}.phraseItem{padding:10px;border-bottom:1px solid rgba(255,255,255,.12)}.pill2{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:7px 10px;margin:4px;font-weight:800}.mode button{margin:4px}</style>
+</head>
+<body>
+<main class="app">
+<section class="hero">
+<h1>Curaçao Conversational Immersion</h1>
+<p>No lesson breakouts. Just upbeat, repeated, mixed-up travel conversations until the useful phrases stick.</p>
+<button class="unlock bigplay" onclick="startImmersion()">▶ Start Immersion</button>
+<div class="row" style="justify-content:center;margin-top:10px">
+<button class="btn secondary" onclick="pauseImmersion()">Pause</button>
+<button class="btn secondary" onclick="resumeImmersion()">Resume</button>
+<button class="btn red" onclick="stopImmersion()">Stop</button>
+</div>
+<div class="status" id="status">Ready. Tap Start once to unlock audio.</div>
+</section>
+<section class="card">
+<h2>Now Practicing</h2>
+<div class="pill" id="counter">0 of 0</div>
+<div class="meter"><div class="bar" id="bar"></div></div>
+<div class="playerBox">
+<div class="coach" id="scene">Tap Start Immersion.</div>
+<div class="now" id="phrase">Bon dia.</div>
+<div class="eng" id="meaning">Good morning.</div>
+<div class="tiny" id="rep">Each core phrase appears about 10 times in mixed contexts.</div>
+</div>
+</section>
+<section class="card mode">
+<h2>Practice Focus</h2>
+<p class="tiny">All are included. These buttons jump to a topic and keep mixing afterward.</p>
+<button class="btn secondary" onclick="jump('Intro')">Introductions</button>
+<button class="btn secondary" onclick="jump('Birthday')">Birthday</button>
+<button class="btn secondary" onclick="jump('Housekeeping')">Housekeeping</button>
+<button class="btn secondary" onclick="jump('Room Service')">Room Service</button>
+<button class="btn secondary" onclick="jump('Ordering')">Ordering</button>
+<button class="btn secondary" onclick="jump('Murals')">Murals</button>
+<button class="btn secondary" onclick="jump('Beaches')">Beaches</button>
+<button class="btn secondary" onclick="jump('Hidden Gems')">Hidden Gems</button>
+</section>
+<section class="card">
+<h2>Core Conversation Set</h2>
+<div id="chips"></div>
+<div class="phraseList" id="list"></div>
+</section>
+<section class="card">
+<h2>Accuracy Note</h2>
+<p class="tiny">This is a travel-practice draft using Papiamentu-style phrases and Spanish voice fallback. Keep “Pabien ku bo aña” / “Pabien ku bo cumpleaño” for birthday wishes; native-speaker review is still recommended before calling it a formal language course.</p>
+<a class="btn secondary" href="index.html?v=600" style="text-decoration:none">Main App</a>
+<a class="btn secondary" href="road-to-curacao-premium.html?v=2" style="text-decoration:none">Podcast Page</a>
+</section>
+</main>
+<script>
+const base=[
+['Intro','You meet someone in the lobby. Start warmly.','Bon dia.','Good morning.'],
+['Intro','They ask your name.','Mi nòmber ta Rayna.','My name is Rayna.'],
+['Intro','Introduce your family simply.','Nos ta for di Nashville.','We are from Nashville.'],
+['Intro','Someone asks what brings you here.','Nos ta di vakashon.','We are on vacation.'],
+['Intro','Tell them why this trip matters.','Nos ta selebrá cumpleaño di mi yiu muhé.','We are celebrating my daughter’s birthday.'],
+['Intro','Say you are happy to be here.','Nos ta hopi kontentu di ta aki.','We are very happy to be here.'],
+['Birthday','Say happy birthday like locals may say it.','Pabien ku bo aña!','Happy birthday / congratulations on your birthday.'],
+['Birthday','Another birthday version to recognize.','Pabien ku bo cumpleaño!','Happy birthday / birthday congratulations.'],
+['Birthday','Classic phrasebook birthday greeting.','Felis cumpleaños!','Happy birthday!'],
+['Birthday','For Riley.','Pabien ku bo aña, Riley!','Happy birthday, Riley!'],
+['Housekeeping','You need more towels.','Mi por haña mas toaya?','May I have more towels?'],
+['Housekeeping','You need washcloths.','Mi por haña mas paña di laba?','May I have more washcloths?'],
+['Housekeeping','You need pillows.','Mi por haña dos kushin ekstra?','May I have two extra pillows?'],
+['Housekeeping','You need another blanket.','Mi por haña un otro kuberta?','May I have another blanket?'],
+['Housekeeping','You need bottled water.','Mi por haña awa den bòter?','May I have bottled water?'],
+['Housekeeping','You need ice.','Mi por haña un balchi ku yelo?','May I have a bucket of ice?'],
+['Room Service','You want room service.','Mi ke pidi room service.','I would like to order room service.'],
+['Room Service','Breakfast to the room.','Nos ke desashuno den kamber.','We would like breakfast in the room.'],
+['Room Service','Coffee request.','Nos ke kopi, por fabor.','We would like coffee, please.'],
+['Room Service','Ask delivery time.','Kuantu tempu e ta tuma?','How long will it take?'],
+['Ordering','Ask what is great on the menu.','Kiko ta hopi bon riba e menu?','What is great on the menu?'],
+['Ordering','Most useful food phrase.','Kiko bo ta rekomendá?','What do you recommend?'],
+['Ordering','Ask what locals order.','Kiko e hende lokalnan ta pidi?','What do locals order?'],
+['Ordering','Most popular dish.','Kua plato ta mas popular?','Which dish is most popular?'],
+['Ordering','Fresh today.','Kiko ta fresku awe?','What is fresh today?'],
+['Ordering','Wine question.','Bo tin Caymus?','Do you have Caymus?'],
+['Ordering','Cabernet question.','Kua Cabernet bo ta rekomendá?','Which Cabernet do you recommend?'],
+['Ordering','Cocktail request.','Mi ke un Hugo Spritz ku hopi mint.','I would like a Hugo Spritz with lots of mint.'],
+['Ordering','Dessert today.','Kiko postre bo tin awe?','What desserts do you have today?'],
+['Ordering','Gelato.','Bo tin gelato?','Do you have gelato?'],
+['Murals','Ask for best murals.','Unda nos por mira e mihó muralnan?','Where can we see the best murals?'],
+['Murals','Ask for local art.','Unda nos por mira arte lokal?','Where can we see local art?'],
+['Murals','Ask who painted it.','Ken a pinta e mural aki?','Who painted this mural?'],
+['Murals','Ask for art district.','Tin un área di arte serka?','Is there an art area nearby?'],
+['Beaches','Ask favorite beach.','Kua playa ta bo favorito?','Which beach is your favorite?'],
+['Beaches','Clearest water.','Kua playa tin e awa mas kla?','Which beach has the clearest water?'],
+['Beaches','Best snorkeling beach.','Kua playa ta mihó pa snorkel?','Which beach is best for snorkeling?'],
+['Beaches','Best family beach.','Kua playa ta mihó pa famia?','Which beach is best for families?'],
+['Beaches','Less crowded beach.','Kua playa ta ménos yen?','Which beach is less crowded?'],
+['Hidden Gems','Best hidden-gem question.','Kua ta bo lugá favorito na Kòrsou?','What is your favorite place in Curaçao?'],
+['Hidden Gems','Where locals go.','Unda e hende lokalnan ta bai?','Where do the locals go?'],
+['Hidden Gems','Tourists miss this.','Kiko turista normalmente no ta mira?','What do tourists usually miss?'],
+['Hidden Gems','One free day.','Si bo tabatin un dia liber, unda bo lo bai?','If you had one free day, where would you go?'],
+['Taxi','Taxi request.','Mi ta buska un taxi.','I am looking for a taxi.'],
+['Taxi','Cost.','Kuantu e ta kosta?','How much does it cost?'],
+['Taxi','Take us to hotel.','Por fabor, hibá nos na e hotel.','Please take us to the hotel.'],
+['Emergency','Need help.','Mi mester yudansa.','I need help.'],
+['Emergency','Doctor.','Mi mester un dòkter.','I need a doctor.'],
+['Emergency','Daughter.','Mi no por haña mi yiu muhé.','I cannot find my daughter.']
+];
+let deck=[],idx=0,playing=false,paused=false,audioBusy=false;
+const $=id=>document.getElementById(id);
+function makeDeck(){deck=[];for(let r=0;r<10;r++){let shuffled=[...base].sort(()=>Math.random()-.5);deck.push(...shuffled)}idx=0;}
+function speechLang(){return 'es-ES'}
+function voiceFor(lang='es-ES'){let vs=speechSynthesis.getVoices();return vs.find(v=>v.lang===lang)||vs.find(v=>v.lang&&v.lang.startsWith('es'))||vs.find(v=>v.lang==='en-US')||vs[0]}
+function say(text,rate=.68,lang='en-US'){return new Promise(res=>{if(!speechSynthesis){res();return}speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=rate;u.pitch=1.12;let v=voiceFor(lang);if(v)u.voice=v;u.onend=res;u.onerror=res;speechSynthesis.speak(u)})}
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+function render(){let item=deck[idx]||base[0];$('counter').textContent=`${Math.min(idx+1,deck.length)} of ${deck.length}`;$('bar').style.width=(deck.length?((idx+1)/deck.length*100):0)+'%';$('scene').textContent=item[1];$('phrase').textContent=item[2];$('meaning').textContent=item[3];$('rep').textContent=`Topic: ${item[0]} · repeated in mixed contexts`;}
+async function playItem(){if(audioBusy||paused||!playing)return;audioBusy=true;let [cat,scene,phrase,eng]=deck[idx];render();$('status').textContent='Playing: '+cat;await say('Great. Picture this. '+scene,.78,'en-US');if(paused||!playing){audioBusy=false;return}await wait(450);await say(phrase,.58,'es-ES');await wait(1600);await say('Your turn.',.82,'en-US');await wait(3100);await say(phrase,.58,'es-ES');await wait(900);await say(eng,.78,'en-US');await wait(900);await say(['Nice.','Good.','You got it.','Excellent.','That one matters.'][idx%5],.82,'en-US');idx++;audioBusy=false;if(idx>=deck.length){playing=false;$('status').textContent='Immersion complete.';return}setTimeout(playItem,500)}
+function startImmersion(){makeDeck();playing=true;paused=false;render();say('Audio unlocked. Starting Curaçao conversational immersion. Same useful phrases, mixed up until they stick.',.8,'en-US').then(()=>playItem())}
+function pauseImmersion(){paused=true;speechSynthesis.cancel();$('status').textContent='Paused.'}
+function resumeImmersion(){if(!playing){playing=true}paused=false;$('status').textContent='Resumed.';playItem()}
+function stopImmersion(){playing=false;paused=false;audioBusy=false;speechSynthesis.cancel();idx=0;render();$('status').textContent='Stopped.'}
+function jump(cat){let pos=deck.findIndex((x,i)=>i>=idx&&x[0]===cat);if(pos<0){makeDeck();pos=deck.findIndex(x=>x[0]===cat)}idx=Math.max(0,pos);render();if(playing&&!paused)playItem()}
+function init(){makeDeck();render();let cats=[...new Set(base.map(x=>x[0]))];$('chips').innerHTML=cats.map(c=>`<span class="pill2">${c}</span>`).join('');$('list').innerHTML=base.map(x=>`<div class="phraseItem"><b>${x[0]}</b><br>${x[2]}<br><span class="tiny">${x[3]}</span></div>`).join('');if(speechSynthesis){speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices()}}
+init();
+</script>
+</body>
+</html>
